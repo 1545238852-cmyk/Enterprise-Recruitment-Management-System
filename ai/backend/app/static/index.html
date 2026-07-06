@@ -1,0 +1,105 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recruiting Agent MVP</title>
+  <style>
+    body { margin: 0; padding: 32px; background: #f8fafc; color: #0f172a; font-family: Inter, system-ui, sans-serif; }
+    h1, h2, h3 { margin-top: 0; }
+    .layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(15,23,42,.06); }
+    label { display:block; font-weight:600; margin-bottom:8px; }
+    input, textarea, button { width:100%; box-sizing:border-box; border-radius:12px; border:1px solid #cbd5e1; padding:12px 14px; font-size:14px; }
+    textarea { min-height:160px; resize:vertical; }
+    button { background:#2563eb; color:#fff; font-weight:700; border:none; cursor:pointer; margin-top:12px; }
+    button.secondary { background:#0f172a; }
+    pre { white-space:pre-wrap; word-break:break-word; background:#0f172a; color:#e2e8f0; padding:16px; border-radius:12px; overflow:auto; min-height:120px; }
+    .status { margin-bottom:16px; padding:14px 16px; background:#dbeafe; color:#1d4ed8; border-radius:12px; }
+    .inline-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; }
+  </style>
+</head>
+<body>
+  <h1>智能招聘 Agent MVP</h1>
+  <p>流程：JD 解析 → 简历解析 → 规则预筛 + 大模型语义匹配 → 面试题生成 → 面试反馈总结</p>
+  <div class="status" id="status">加载中...</div>
+  <div class="layout">
+    <section class="card">
+      <h2>1. 创建岗位</h2>
+      <label for="jobTitle">岗位标题</label>
+      <input id="jobTitle" placeholder="例如：AI 应用开发工程师" />
+      <label for="jobDescription">JD 文本</label>
+      <textarea id="jobDescription" placeholder="粘贴岗位描述..."></textarea>
+      <button onclick="createJob()">解析 JD</button>
+    </section>
+    <section class="card">
+      <h2>2. 导入候选人简历</h2>
+      <label for="resumeText">简历文本</label>
+      <textarea id="resumeText" placeholder="粘贴简历文本，或使用文件上传接口"></textarea>
+      <button onclick="createCandidate()">解析简历</button>
+    </section>
+    <section class="card">
+      <h2>3. 发起筛选</h2>
+      <div class="inline-grid">
+        <div><label for="jobId">岗位 ID</label><input id="jobId" type="number" min="1" /></div>
+        <div><label for="candidateId">候选人 ID</label><input id="candidateId" type="number" min="1" /></div>
+      </div>
+      <button onclick="createScreening()">开始筛选</button>
+    </section>
+    <section class="card">
+      <h2>4. 面试反馈总结</h2>
+      <label for="screeningId">筛选记录 ID</label>
+      <input id="screeningId" type="number" min="1" />
+      <label for="feedbackText">面试反馈文本</label>
+      <textarea id="feedbackText" placeholder="输入面试记录、面试官笔记或转写内容"></textarea>
+      <button onclick="summarizeFeedback()">总结反馈</button>
+    </section>
+  </div>
+  <div class="layout" style="margin-top:20px;">
+    <section class="card"><h3>岗位列表</h3><button class="secondary" onclick="loadJobs()">刷新岗位</button><pre id="jobsOutput"></pre></section>
+    <section class="card"><h3>候选人列表</h3><button class="secondary" onclick="loadCandidates()">刷新候选人</button><pre id="candidatesOutput"></pre></section>
+    <section class="card"><h3>筛选结果</h3><button class="secondary" onclick="loadScreenings()">刷新筛选记录</button><pre id="screeningsOutput"></pre></section>
+    <section class="card"><h3>最近操作结果</h3><pre id="resultOutput"></pre></section>
+  </div>
+  <script>
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, options);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '请求失败');
+      return data;
+    }
+    function setResult(data) { document.getElementById('resultOutput').textContent = JSON.stringify(data, null, 2); }
+    async function loadStatus() {
+      try {
+        const data = await fetchJSON('/api/health');
+        document.getElementById('status').textContent = `服务状态：${data.status} | LLM Provider: ${data.llm_provider} | Model: ${data.model} | Mock模式: ${data.mock_enabled}`;
+      } catch (err) { document.getElementById('status').textContent = err.message; }
+    }
+    async function createJob() {
+      const title = document.getElementById('jobTitle').value;
+      const description = document.getElementById('jobDescription').value;
+      const data = await fetchJSON('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description }) });
+      setResult(data); document.getElementById('jobId').value = data.id; await loadJobs();
+    }
+    async function createCandidate() {
+      const resume_text = document.getElementById('resumeText').value;
+      const data = await fetchJSON('/api/candidates/text', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resume_text }) });
+      setResult(data); document.getElementById('candidateId').value = data.id; await loadCandidates();
+    }
+    async function createScreening() {
+      const fd = new FormData(); fd.append('job_id', document.getElementById('jobId').value); fd.append('candidate_id', document.getElementById('candidateId').value);
+      const data = await fetchJSON('/api/screenings', { method: 'POST', body: fd });
+      setResult(data); document.getElementById('screeningId').value = data.id; await loadScreenings();
+    }
+    async function summarizeFeedback() {
+      const screeningId = document.getElementById('screeningId').value; const feedback_text = document.getElementById('feedbackText').value;
+      const data = await fetchJSON(`/api/screenings/${screeningId}/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback_text }) });
+      setResult(data);
+    }
+    async function loadJobs() { document.getElementById('jobsOutput').textContent = JSON.stringify(await fetchJSON('/api/jobs'), null, 2); }
+    async function loadCandidates() { document.getElementById('candidatesOutput').textContent = JSON.stringify(await fetchJSON('/api/candidates'), null, 2); }
+    async function loadScreenings() { document.getElementById('screeningsOutput').textContent = JSON.stringify(await fetchJSON('/api/screenings'), null, 2); }
+    loadStatus(); loadJobs(); loadCandidates(); loadScreenings();
+  </script>
+</body>
+</html>

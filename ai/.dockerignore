@@ -1,0 +1,26 @@
+﻿# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Node artifacts
+frontend/node_modules/
+frontend/.next/
+
+# Git / OS
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Local runtime files
+*.db
+*.sqlite3
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log

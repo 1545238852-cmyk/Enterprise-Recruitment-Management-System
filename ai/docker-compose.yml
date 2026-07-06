@@ -1,0 +1,66 @@
+﻿services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ira-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: recruit_agent
+      POSTGRES_USER: recruit
+      POSTGRES_PASSWORD: recruit123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recruit -d recruit_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ira-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://recruit:recruit123@postgres:5432/recruit_agent
+      CORS_ORIGINS: '["http://localhost:3000"]'
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      DIFY_API_BASE: ${DIFY_API_BASE:-}
+      DIFY_API_KEY: ${DIFY_API_KEY:-}
+      DIFY_JOB_WORKFLOW_ID: ${DIFY_JOB_WORKFLOW_ID:-}
+      DIFY_RESUME_WORKFLOW_ID: ${DIFY_RESUME_WORKFLOW_ID:-}
+      DIFY_MATCH_WORKFLOW_ID: ${DIFY_MATCH_WORKFLOW_ID:-}
+      DIFY_INTERVIEW_WORKFLOW_ID: ${DIFY_INTERVIEW_WORKFLOW_ID:-}
+      DIFY_FEEDBACK_WORKFLOW_ID: ${DIFY_FEEDBACK_WORKFLOW_ID:-}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+        INTERNAL_API_BASE_URL: http://backend:8000/api
+    container_name: ira-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+      INTERNAL_API_BASE_URL: http://backend:8000/api
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+
