@@ -1,5 +1,13 @@
 ﻿__pycache__/
 .pytest_cache/
+.venv/
+node_modules/
+.next/
+out/
 .env
-recruit_agent.db
-*.pyc
+.env.local
+.env.*.local
+*.db
+*.sqlite
+*.sqlite3
+*.log

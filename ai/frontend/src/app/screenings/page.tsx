@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { apiGet, apiPost } from '@/lib/api'
-import { Candidate, FeedbackSummaryResponse, Job, Screening } from '@/lib/types'
 import { safeText } from '@/lib/display'
+import { Candidate, FeedbackSummaryResponse, Job, Screening } from '@/lib/types'
 
 function formatDecision(decision: string) {
   const mapping: Record<string, string> = {
-    proceed: '建议进入下一轮',
-    hold: '建议继续观察',
-    reject: '暂不推荐推进',
+    proceed: '进入下一轮',
+    hold: '继续观察',
+    reject: '暂不推进',
   }
   return mapping[decision] ?? decision
 }
@@ -20,7 +20,7 @@ export default function ScreeningsPage() {
   const [screenings, setScreenings] = useState<Screening[]>([])
   const [selectedJobId, setSelectedJobId] = useState<number | ''>('')
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | ''>('')
-  const [feedbackText, setFeedbackText] = useState('候选人表达清晰，项目经历比较扎实，建议进入下一轮，后续重点了解实际落地能力。')
+  const [feedbackText, setFeedbackText] = useState('候选人表达清晰，项目经历扎实，建议进入下一轮，后续重点核实落地深度。')
   const [feedbackScreeningId, setFeedbackScreeningId] = useState<number | ''>('')
   const [message, setMessage] = useState('')
   const [creating, setCreating] = useState(false)
@@ -60,7 +60,7 @@ export default function ScreeningsPage() {
 
   async function handleCreate() {
     if (!selectedJobId || !selectedCandidateId) {
-      setMessage('请先选择岗位和候选人。')
+      setMessage('请选择岗位和候选人')
       return
     }
 
@@ -69,10 +69,10 @@ export default function ScreeningsPage() {
 
     try {
       await apiPost<Screening>(`/screenings?job_id=${selectedJobId}&candidate_id=${selectedCandidateId}`)
-      setMessage('筛选建议已生成，可以直接查看匹配情况和面试重点。')
+      setMessage('筛选记录已生成')
       await loadAll()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '生成筛选建议失败')
+      setMessage(error instanceof Error ? error.message : '生成失败')
     } finally {
       setCreating(false)
     }
@@ -81,7 +81,7 @@ export default function ScreeningsPage() {
   async function handleFeedbackSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!feedbackScreeningId) {
-      setMessage('请先选择一条筛选记录。')
+      setMessage('请选择筛选记录')
       return
     }
 
@@ -93,9 +93,9 @@ export default function ScreeningsPage() {
         feedback_text: feedbackText,
       })
       setLatestSummary(summary)
-      setMessage('面试反馈已整理完成。')
+      setMessage('反馈已整理')
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '反馈整理失败')
+      setMessage(error instanceof Error ? error.message : '整理失败')
     } finally {
       setSummarizing(false)
     }
@@ -108,26 +108,24 @@ export default function ScreeningsPage() {
       <section className="hero-card compact-hero">
         <div className="hero-copy">
           <span className="eyebrow-chip">筛选记录</span>
-          <h2 className="hero-title">让每一次筛选都有理由、有结论，也方便团队复盘。</h2>
-          <p className="hero-text">
-            这一页可以发起候选人筛选，也可以把面试官的原始反馈整理成统一格式。这样不管是招聘、业务面试官还是负责人，都能看懂结论和依据。
-          </p>
+          <h2 className="hero-title">筛选记录</h2>
+          <p className="hero-text">发起筛选、反馈整理、历史记录</p>
         </div>
 
         <div className="hero-panel">
-          <div className="hero-panel-label">页面里的两件事</div>
+          <div className="hero-panel-label">当前数据</div>
           <div className="step-list">
             <div className="step-item">
-              <strong>先生成筛选建议</strong>
-              <span>系统会输出匹配情况、风险点、面试重点和参考资料。</span>
+              <strong>岗位数量</strong>
+              <span>{jobs.length}</span>
             </div>
             <div className="step-item">
-              <strong>再整理面试反馈</strong>
-              <span>把零散反馈整理成统一结论，方便流转和沉淀。</span>
+              <strong>候选人数</strong>
+              <span>{candidates.length}</span>
             </div>
             <div className="step-item">
-              <strong>最后保留历史记录</strong>
-              <span>后面复盘时，可以回看每次是如何做出判断的。</span>
+              <strong>记录数量</strong>
+              <span>{screenings.length}</span>
             </div>
           </div>
         </div>
@@ -144,30 +142,29 @@ export default function ScreeningsPage() {
           <div className="section-heading">
             <div>
               <h3 className="card-title">发起筛选</h3>
-              <p className="card-subtitle">选择岗位和候选人后，系统会自动生成一份筛选建议。</p>
+              <p className="card-subtitle">岗位、候选人</p>
             </div>
-            <span className="badge">第一步</span>
           </div>
           <div className="form-grid">
             <div>
               <label className="label">选择岗位</label>
-              <select className="select" value={selectedJobId} onChange={(e) => setSelectedJobId(Number(e.target.value))}>
+              <select className="select" value={selectedJobId} onChange={(e) => setSelectedJobId(e.target.value ? Number(e.target.value) : '')}>
                 {jobs.map((job) => (
-                  <option key={job.id} value={job.id}>#{job.id} {safeText(job.title, '\u65e7\u5c97\u4f4d\u6570\u636e\u5f02\u5e38')}</option>
+                  <option key={job.id} value={job.id}>#{job.id} {safeText(job.title, '岗位数据异常')}</option>
                 ))}
               </select>
             </div>
             <div>
               <label className="label">选择候选人</label>
-              <select className="select" value={selectedCandidateId} onChange={(e) => setSelectedCandidateId(Number(e.target.value))}>
+              <select className="select" value={selectedCandidateId} onChange={(e) => setSelectedCandidateId(e.target.value ? Number(e.target.value) : '')}>
                 {candidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>#{candidate.id} {safeText(candidate.name, '\u65e7\u5019\u9009\u4eba\u6570\u636e\u5f02\u5e38')}</option>
+                  <option key={candidate.id} value={candidate.id}>#{candidate.id} {safeText(candidate.name, '候选人数据异常')}</option>
                 ))}
               </select>
             </div>
             <div className="actions">
               <button className="button" disabled={creating} onClick={() => void handleCreate()} type="button">
-                {creating ? '生成中...' : '生成筛选建议'}
+                {creating ? '生成中...' : '发起筛选'}
               </button>
               <button className="button subtle" onClick={() => void loadAll()} type="button" disabled={loading}>
                 {loading ? '刷新中...' : '刷新数据'}
@@ -179,15 +176,14 @@ export default function ScreeningsPage() {
         <article className="card soft-panel">
           <div className="section-heading">
             <div>
-              <h3 className="card-title">整理面试反馈</h3>
-              <p className="card-subtitle">把面试官的原始反馈贴进来，系统会自动整理成统一格式。</p>
+              <h3 className="card-title">反馈整理</h3>
+              <p className="card-subtitle">筛选记录、面试反馈</p>
             </div>
-            <span className="badge">第二步</span>
           </div>
           <form className="form-grid" onSubmit={handleFeedbackSubmit}>
             <div>
-              <label className="label">选择筛选记录</label>
-              <select className="select" value={feedbackScreeningId} onChange={(e) => setFeedbackScreeningId(Number(e.target.value))}>
+              <label className="label">选择记录</label>
+              <select className="select" value={feedbackScreeningId} onChange={(e) => setFeedbackScreeningId(e.target.value ? Number(e.target.value) : '')}>
                 {screenings.map((screening) => (
                   <option key={screening.id} value={screening.id}>
                     #{screening.id} · 岗位 {screening.job_id} / 候选人 {screening.candidate_id}
@@ -212,11 +208,11 @@ export default function ScreeningsPage() {
         <article className="card">
           <div className="section-heading">
             <div>
-              <h3 className="card-title">最新筛选建议</h3>
-              <p className="card-subtitle">这里展示最近一次生成的筛选结果和判断依据。</p>
+              <h3 className="card-title">最新结果</h3>
             </div>
           </div>
-          {!latestScreening && <div className="empty">暂时还没有筛选记录，请先生成一条筛选建议。</div>}
+
+          {!latestScreening && <div className="empty">暂无筛选记录</div>}
           {latestScreening && (
             <div className="table-list">
               <div className="list-item elevated">
@@ -227,18 +223,18 @@ export default function ScreeningsPage() {
                 <div className="small">岗位 {latestScreening.job_id} / 候选人 {latestScreening.candidate_id}</div>
               </div>
               <div className="list-item elevated">
-                <strong>符合要求的点</strong>
+                <strong>匹配项</strong>
                 <div className="small">{latestScreening.report.hard_screen.matched_requirements.join('、') || '暂无'}</div>
-                <div className="small">暂时欠缺：{latestScreening.report.hard_screen.missing_requirements.join('、') || '无'}</div>
+                <div className="small">缺失项：{latestScreening.report.hard_screen.missing_requirements.join('、') || '无'}</div>
               </div>
               <div className="list-item elevated">
-                <strong>匹配说明</strong>
-                <div className="small">{latestScreening.report.match_analysis.summary}</div>
-                <div className="small">需要关注：{latestScreening.report.match_analysis.risk_points.join('、') || '无'}</div>
-                <div className="small">建议结论：{latestScreening.report.match_analysis.recommendation || '暂无'}</div>
+                <strong>结果说明</strong>
+                <div className="small">{latestScreening.report.match_analysis.summary || '暂无'}</div>
+                <div className="small">关注项：{latestScreening.report.match_analysis.risk_points.join('、') || '无'}</div>
+                <div className="small">结论：{latestScreening.report.match_analysis.recommendation || '暂无'}</div>
               </div>
               <div className="list-item elevated">
-                <strong>建议重点追问</strong>
+                <strong>面试问题</strong>
                 <ul className="bullet-list compact-list">
                   {latestScreening.report.interview_plan.questions.map((q, index) => (
                     <li key={`${q.category}-${index}`}>
@@ -248,7 +244,7 @@ export default function ScreeningsPage() {
                 </ul>
               </div>
               <div className="list-item elevated">
-                <strong>参考资料</strong>
+                <strong>关联资料</strong>
                 <ul className="bullet-list compact-list">
                   {latestScreening.report.retrieved_contexts.map((ctx, index) => (
                     <li key={`${ctx.document_name}-${index}`}>
@@ -264,11 +260,10 @@ export default function ScreeningsPage() {
         <article className="card soft-panel">
           <div className="section-heading">
             <div>
-              <h3 className="card-title">反馈整理结果</h3>
-              <p className="card-subtitle">把零散反馈统一成更适合汇报和流转的结论。</p>
+              <h3 className="card-title">反馈结果</h3>
             </div>
           </div>
-          {!latestSummary && <div className="empty">提交一段面试反馈后，这里会显示整理后的结论。</div>}
+          {!latestSummary && <div className="empty">暂无反馈结果</div>}
           {latestSummary && (
             <div className="table-list">
               <div className="list-item elevated">
@@ -276,7 +271,7 @@ export default function ScreeningsPage() {
                 <div className="small">{latestSummary.summary.technical_strengths.join('、') || '暂无'}</div>
               </div>
               <div className="list-item elevated">
-                <strong>需要关注</strong>
+                <strong>关注项</strong>
                 <div className="small">{latestSummary.summary.concerns.join('、') || '暂无'}</div>
               </div>
               <div className="list-item elevated">
@@ -284,11 +279,11 @@ export default function ScreeningsPage() {
                 <div className="small">{latestSummary.summary.communication_signal}</div>
               </div>
               <div className="list-item elevated">
-                <strong>下一步建议</strong>
+                <strong>下一步</strong>
                 <div className="small">{latestSummary.summary.next_step_recommendation}</div>
               </div>
               <div className="list-item elevated">
-                <strong>总结</strong>
+                <strong>结论</strong>
                 <div className="small">{latestSummary.summary.final_summary}</div>
               </div>
             </div>
@@ -299,8 +294,7 @@ export default function ScreeningsPage() {
       <section className="card">
         <div className="section-heading">
           <div>
-            <h3 className="card-title">历史筛选记录</h3>
-            <p className="card-subtitle">所有筛选记录都会保留，方便后续复盘和优化推荐逻辑。</p>
+            <h3 className="card-title">历史记录</h3>
           </div>
         </div>
         <div className="table-list">
@@ -311,14 +305,14 @@ export default function ScreeningsPage() {
                 <span className="badge">{formatDecision(screening.decision)}</span>
               </div>
               <div className="score-pills">
-                <span className="score-pill">推荐分 {screening.score}</span>
+                <span className="score-pill">评分 {screening.score}</span>
                 <span className="score-pill">{new Date(screening.created_at).toLocaleString()}</span>
               </div>
-              <div className="small">处理过程：{screening.report.workflow_log.join(' → ')}</div>
+              <div className="small">流程：{screening.report.workflow_log.join(' → ')}</div>
             </div>
           ))}
-          {!loading && screenings.length === 0 && <div className="empty">暂时还没有筛选记录。</div>}
-          {loading && <div className="empty">正在加载筛选记录...</div>}
+          {!loading && screenings.length === 0 && <div className="empty">暂无筛选记录</div>}
+          {loading && <div className="empty">正在加载...</div>}
         </div>
       </section>
     </div>

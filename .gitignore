@@ -1,0 +1,36 @@
+﻿# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Databases / uploads / logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Project-specific runtime files
+wsl_docker_list.txt
+home_full.tmp
+jobs_full.tmp

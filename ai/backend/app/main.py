@@ -74,6 +74,7 @@ def create_job(payload: JobCreateRequest, service: RecruitmentPlatformService = 
 def list_jobs(service: RecruitmentPlatformService = Depends(get_service)):
     return service.list_jobs()
 
+
 @app.delete(f'{settings.api_prefix}/jobs/{{job_id}}')
 def delete_job(job_id: int, service: RecruitmentPlatformService = Depends(get_service)):
     try:
@@ -107,6 +108,7 @@ async def upload_candidate(file: UploadFile = File(...), service: RecruitmentPla
 @app.get(f'{settings.api_prefix}/candidates')
 def list_candidates(service: RecruitmentPlatformService = Depends(get_service)):
     return service.list_candidates()
+
 
 @app.delete(f'{settings.api_prefix}/candidates/{{candidate_id}}')
 def delete_candidate(candidate_id: int, service: RecruitmentPlatformService = Depends(get_service)):

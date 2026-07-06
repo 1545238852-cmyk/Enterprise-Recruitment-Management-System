@@ -10,7 +10,7 @@ const nav = [
   { href: '/candidates', label: '候选人', icon: UsersRound },
   { href: '/knowledge', label: '资料库', icon: DatabaseZap },
   { href: '/screenings', label: '筛选记录', icon: FileSearch },
-  { href: '/evals', label: '效果分析', icon: BarChart3 },
+  { href: '/evals', label: '评估报表', icon: BarChart3 },
 ]
 
 export default function TopNavigation() {

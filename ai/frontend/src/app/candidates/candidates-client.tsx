@@ -1,97 +1,52 @@
-"use client"
+﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import ConfirmDialog from '@/components/confirm-dialog'
 import { apiDelete, apiGetOrThrow, apiPost, apiUpload } from '@/lib/api'
 import { looksBrokenText, safeList, safeText } from '@/lib/display'
 import { Candidate } from '@/lib/types'
 
-const copy = {
-  pageTag: '\u5019\u9009\u4eba\u7ba1\u7406',
-  pageTitle: '\u5148\u628a\u7b80\u5386\u6574\u7406\u6210\u7edf\u4e00\u6863\u6848\uff0c\u540e\u9762\u7684\u63a8\u8350\u548c\u7b5b\u9009\u624d\u4f1a\u66f4\u7a33\u3002',
-  pageText: '\u8fd9\u4e00\u9875\u652f\u6301\u4e24\u79cd\u5f55\u5165\u65b9\u5f0f\uff1a\u76f4\u63a5\u7c98\u8d34\u7b80\u5386\u5185\u5bb9\uff0c\u6216\u8005\u4e0a\u4f20\u5df2\u6709\u6587\u4ef6\u3002\u4e0b\u9762\u7684\u5019\u9009\u4eba\u5217\u8868\u5df2\u7ecf\u6539\u6210\u70b9\u51fb\u5c55\u5f00\u5f0f\uff0c\u4e0d\u4f1a\u518d\u6574\u9875\u4e71\u6ed1\u3002',
-  guideTitle: '\u4f60\u53ef\u4ee5\u8fd9\u6837\u4f7f\u7528',
-  pasteWay: '\u65b9\u5f0f\u4e00\uff1a\u76f4\u63a5\u7c98\u8d34',
-  pasteWayDesc: '\u9002\u5408\u4e34\u65f6\u6536\u5230\u7684\u6587\u672c\u7b80\u5386\uff0c\u5f55\u5165\u6700\u5feb\u3002',
-  uploadWay: '\u65b9\u5f0f\u4e8c\uff1a\u4e0a\u4f20\u6587\u4ef6',
-  uploadWayDesc: '\u9002\u5408\u771f\u5b9e\u62db\u8058\u573a\u666f\u91cc\u7684 PDF\u3001DOCX\u3001TXT \u6587\u4ef6\u3002',
-  oldDataTitle: '\u65e7\u6570\u636e\u63d0\u9192',
-  oldDataDesc: '\u5982\u679c\u770b\u5230\u201c\u65e7\u5019\u9009\u4eba\u6570\u636e\u5f02\u5e38\u201d\uff0c\u8bf4\u660e\u90a3\u6761\u65e7\u6570\u636e\u4e4b\u524d\u5df2\u7ecf\u88ab\u5b58\u574f\u4e86\uff0c\u76f4\u63a5\u5220\u6389\u91cd\u5efa\u5373\u53ef\u3002',
-  pasteCard: '\u7c98\u8d34\u7b80\u5386\u5f55\u5165',
-  pasteCardDesc: '\u628a\u5019\u9009\u4eba\u7684\u7b80\u5386\u5185\u5bb9\u8d34\u8fdb\u6765\uff0c\u7cfb\u7edf\u4f1a\u81ea\u52a8\u6574\u7406\u6210\u7edf\u4e00\u6863\u6848\u3002',
-  firstWay: '\u7b2c\u4e00\u79cd\u65b9\u5f0f',
-  resumeContent: '\u7b80\u5386\u5185\u5bb9',
-  resumePlaceholder: '\u8bf7\u7c98\u8d34\u5019\u9009\u4eba\u7684\u7b80\u5386\u6587\u672c',
-  creating: '\u5f55\u5165\u4e2d...',
-  create: '\u4fdd\u5b58\u5019\u9009\u4eba',
-  uploadCard: '\u4e0a\u4f20\u6587\u4ef6\u5f55\u5165',
-  uploadCardDesc: '\u652f\u6301\u4e0a\u4f20\u7b80\u5386\u6587\u4ef6\uff0c\u9002\u5408\u76f4\u63a5\u5904\u7406\u73b0\u6210\u7684\u5019\u9009\u4eba\u8d44\u6599\u3002',
-  secondWay: '\u7b2c\u4e8c\u79cd\u65b9\u5f0f',
-  chooseFile: '\u9009\u62e9\u6587\u4ef6',
-  uploadHint: '\u652f\u6301 PDF\u3001DOC\u3001DOCX\u3001TXT\u3002\u4e0a\u4f20\u540e\u7cfb\u7edf\u4f1a\u81ea\u52a8\u62bd\u53d6\u6587\u672c\u5e76\u6574\u7406\u7b80\u5386\u3002',
-  uploading: '\u4e0a\u4f20\u4e2d...',
-  upload: '\u4e0a\u4f20\u5e76\u5f55\u5165',
-  listTitle: '\u5019\u9009\u4eba\u5217\u8868',
-  listDesc: '\u6539\u6210\u70b9\u51fb\u5c55\u5f00\u67e5\u770b\u8be6\u60c5\uff0c\u4fe1\u606f\u66f4\u6e05\u695a\uff0c\u4e5f\u4e0d\u4f1a\u6ee1\u5c4f\u5806\u7740\u8dd1\u3002',
-  refreshing: '\u5237\u65b0\u4e2d...',
-  refresh: '\u5237\u65b0\u5217\u8868',
-  loadFailedPrefix: '\u5019\u9009\u4eba\u5217\u8868\u52a0\u8f7d\u5931\u8d25\uff1a',
-  backendHint: '\u5982\u679c\u4f60\u662f\u5728\u672c\u5730\u8fd0\u884c\uff0c\u8bf7\u786e\u8ba4\u540e\u7aef\u670d\u52a1\u5df2\u7ecf\u542f\u52a8\u5728 8001 \u7aef\u53e3\u3002',
-  brokenCandidate: '\u65e7\u5019\u9009\u4eba\u6570\u636e\u5f02\u5e38',
-  pendingRole: '\u5c97\u4f4d\u5f85\u6574\u7406',
-  expand: '\u70b9\u51fb\u5c55\u5f00',
-  yearsExp: '\u5e74\u7ecf\u9a8c',
-  brokenWarn: '\u8fd9\u662f\u4e00\u6761\u65e7\u7684\u5f02\u5e38\u5019\u9009\u4eba\u6570\u636e\uff0c\u5185\u5bb9\u91cc\u5df2\u7ecf\u88ab\u5b58\u6210\u95ee\u53f7\u4e86\uff0c\u5efa\u8bae\u76f4\u63a5\u5220\u9664\u540e\u91cd\u65b0\u5f55\u5165\u3002',
-  education: '\u5b66\u5386\uff1a',
-  location: '\u5730\u70b9\uff1a',
-  fallback: '\u5f85\u8865\u5145',
-  sourceFile: '\u6765\u6e90\u6587\u4ef6\uff1a',
-  highlights: '\u4eae\u70b9\uff1a',
-  none: '\u6682\u65e0',
-  risks: '\u9700\u8981\u5173\u6ce8\uff1a',
-  projects: '\u9879\u76ee\u7ecf\u5386\uff1a',
-  projectNameBroken: '\u9879\u76ee\u540d\u79f0\u5f02\u5e38',
-  roleFallback: '\u89d2\u8272\u5f85\u8865\u5145',
-  deleting: '\u5220\u9664\u4e2d...',
-  delete: '\u5220\u9664\u5019\u9009\u4eba',
-  empty: '\u6682\u65f6\u8fd8\u6ca1\u6709\u5019\u9009\u4eba\u6570\u636e\uff0c\u5148\u5f55\u5165\u4e00\u4efd\u7b80\u5386\u5427\u3002',
-  loading: '\u6b63\u5728\u52a0\u8f7d\u5019\u9009\u4eba\u5217\u8868...',
-  chooseResumeFile: '\u8bf7\u5148\u9009\u62e9\u7b80\u5386\u6587\u4ef6\u3002',
-  createDone: '\u5019\u9009\u4eba\u5df2\u5f55\u5165\uff0c\u7cfb\u7edf\u5df2\u81ea\u52a8\u6574\u7406\u7b80\u5386\u5185\u5bb9\u3002',
-  createFailed: '\u5019\u9009\u4eba\u5f55\u5165\u5931\u8d25',
-  uploadDone: '\u7b80\u5386\u6587\u4ef6\u5df2\u4e0a\u4f20\u5e76\u5f55\u5165\u6210\u529f\u3002',
-  uploadFailed: '\u6587\u4ef6\u4e0a\u4f20\u5931\u8d25',
-  deleteDone: '\u5019\u9009\u4eba\u5df2\u5220\u9664\u3002',
-  deleteFailed: '\u5220\u9664\u5019\u9009\u4eba\u5931\u8d25',
-  deleteConfirmPrefix: '\u786e\u8ba4\u5220\u9664\u5019\u9009\u4eba\u300c',
-  deleteConfirmSuffix: '\u300d\u5417\uff1f\u5173\u8054\u7684\u7b5b\u9009\u8bb0\u5f55\u4e5f\u4f1a\u4e00\u8d77\u5220\u9664\u3002',
-} as const
+const initialResume = `张晨
+后端开发工程师
+5年工作经验
 
-const initialText = [
-  '\u738b\u4e94',
-  '5\u5e74\u5de5\u4f5c\u7ecf\u9a8c\uff0c\u73b0\u4efb AI \u5e94\u7528\u5de5\u7a0b\u5e08\u3002',
-  '\u719f\u6089 Python\u3001FastAPI\u3001\u667a\u80fd\u95ee\u7b54\u3001\u81ea\u52a8\u5316\u52a9\u624b\u3001Docker\u3001PostgreSQL\u3002',
-  '\u4e3b\u5bfc\u8fc7\u77e5\u8bc6\u5e93\u95ee\u7b54\u7cfb\u7edf\u3001\u667a\u80fd\u62db\u8058\u5e73\u53f0\u548c\u641c\u7d22\u63a8\u8350\u670d\u52a1\u5f00\u53d1\u3002',
-].join('\n')
-
-type DeleteResponse = {
-  success: boolean
-  deleted_id: number
-}
+技能：Python、FastAPI、MySQL、Redis、Docker
+经历：负责招聘系统、审批系统与数据接口开发。`
 
 type CandidatesClientPageProps = {
   initialCandidates: Candidate[]
   initialError: string
 }
 
+type DeleteResponse = {
+  success: boolean
+  deleted_id: number
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleString()
+}
+
+function getCandidateStatus(candidate: Candidate) {
+  if (looksBrokenText(candidate.name) || looksBrokenText(candidate.raw_resume_text)) return '数据异常'
+  if ((candidate.structured_profile.skills ?? []).length >= 3) return '已解析'
+  return '待补充'
+}
+
 export default function CandidatesClientPage({ initialCandidates, initialError }: CandidatesClientPageProps) {
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates)
-  const [resumeText, setResumeText] = useState(initialText)
-  const [file, setFile] = useState<File | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(initialCandidates.length === 0 && !initialError)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [loadError, setLoadError] = useState(initialError)
+  const [resumeText, setResumeText] = useState(initialResume)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(initialCandidates[0]?.id ?? null)
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'file' | 'text'>('all')
+  const [sortBy, setSortBy] = useState<'latest' | 'experience'>('latest')
+  const [pendingDelete, setPendingDelete] = useState<Candidate | null>(null)
   const [message, setMessage] = useState('')
 
   async function loadCandidates() {
@@ -101,9 +56,10 @@ export default function CandidatesClientPage({ initialCandidates, initialError }
     try {
       const data = await apiGetOrThrow<Candidate[]>('/candidates')
       setCandidates(data)
+      setSelectedCandidateId((prev) => (data.some((candidate) => candidate.id === prev) ? prev : (data[0]?.id ?? null)))
     } catch (error) {
       setCandidates([])
-      setLoadError(error instanceof Error ? error.message : '\u5019\u9009\u4eba\u5217\u8868\u52a0\u8f7d\u5931\u8d25')
+      setLoadError(error instanceof Error ? error.message : '候选人列表加载失败')
     } finally {
       setLoading(false)
     }
@@ -117,25 +73,26 @@ export default function CandidatesClientPage({ initialCandidates, initialError }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setSubmitting(true)
+    setCreating(true)
     setMessage('')
 
     try {
       await apiPost<Candidate>('/candidates/text', { resume_text: resumeText })
-      setMessage(copy.createDone)
-      setResumeText(initialText)
+      setMessage('候选人已保存')
+      setResumeText(initialResume)
       await loadCandidates()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : copy.createFailed)
+      setMessage(error instanceof Error ? error.message : '保存失败')
     } finally {
-      setSubmitting(false)
+      setCreating(false)
     }
   }
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!file) {
-      setMessage(copy.chooseResumeFile)
+
+    if (!uploadFile) {
+      setMessage('请选择简历文件')
       return
     }
 
@@ -144,61 +101,108 @@ export default function CandidatesClientPage({ initialCandidates, initialError }
 
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', uploadFile)
       await apiUpload<Candidate>('/candidates/upload', formData)
-      setMessage(copy.uploadDone)
-      setFile(null)
-      const fileInput = document.getElementById('resume-file-input') as HTMLInputElement | null
-      if (fileInput) fileInput.value = ''
+      setMessage('上传完成')
+      setUploadFile(null)
       await loadCandidates()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : copy.uploadFailed)
+      setMessage(error instanceof Error ? error.message : '上传失败')
     } finally {
       setUploading(false)
     }
   }
 
-  async function handleDelete(candidateId: number, candidateName: string) {
-    const ok = window.confirm(`${copy.deleteConfirmPrefix}${candidateName}${copy.deleteConfirmSuffix}`)
-    if (!ok) return
+  async function handleDeleteConfirm() {
+    if (!pendingDelete) return
 
-    setDeletingId(candidateId)
+    setDeletingId(pendingDelete.id)
     setMessage('')
 
     try {
-      await apiDelete<DeleteResponse>(`/candidates/${candidateId}`)
-      setMessage(copy.deleteDone)
+      await apiDelete<DeleteResponse>(`/candidates/${pendingDelete.id}`)
+      setMessage('候选人已删除')
+      setPendingDelete(null)
       await loadCandidates()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : copy.deleteFailed)
+      setMessage(error instanceof Error ? error.message : '删除失败')
     } finally {
       setDeletingId(null)
     }
   }
 
+  const filteredCandidates = useMemo(() => {
+    const keyword = searchKeyword.trim().toLowerCase()
+    const next = candidates.filter((candidate) => {
+      const sourceType = candidate.source_filename ? 'file' : 'text'
+      const text = [
+        candidate.name,
+        candidate.structured_profile.current_title,
+        ...(candidate.structured_profile.skills ?? []),
+        ...(candidate.structured_profile.strengths ?? []),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      const matchKeyword = keyword ? text.includes(keyword) : true
+      const matchSource = sourceFilter === 'all' ? true : sourceType === sourceFilter
+      return matchKeyword && matchSource
+    })
+
+    return [...next].sort((a, b) => {
+      if (sortBy === 'experience') {
+        return b.structured_profile.years_experience - a.structured_profile.years_experience
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  }, [candidates, searchKeyword, sourceFilter, sortBy])
+
+  useEffect(() => {
+    if (filteredCandidates.length === 0) {
+      setSelectedCandidateId(null)
+      return
+    }
+    if (!filteredCandidates.some((candidate) => candidate.id === selectedCandidateId)) {
+      setSelectedCandidateId(filteredCandidates[0].id)
+    }
+  }, [filteredCandidates, selectedCandidateId])
+
+  const selectedCandidate = useMemo(
+    () => filteredCandidates.find((candidate) => candidate.id === selectedCandidateId) ?? candidates.find((candidate) => candidate.id === selectedCandidateId) ?? null,
+    [filteredCandidates, candidates, selectedCandidateId],
+  )
+
+  const fileResumeCount = useMemo(
+    () => candidates.filter((candidate) => Boolean(candidate.source_filename)).length,
+    [candidates],
+  )
+  const textResumeCount = candidates.length - fileResumeCount
+  const parsedCount = useMemo(() => candidates.filter((candidate) => getCandidateStatus(candidate) === '已解析').length, [candidates])
+  const brokenCount = useMemo(() => candidates.filter((candidate) => getCandidateStatus(candidate) === '数据异常').length, [candidates])
+
   return (
     <div className="page-stack">
       <section className="hero-card compact-hero">
         <div className="hero-copy">
-          <span className="eyebrow-chip">{copy.pageTag}</span>
-          <h2 className="hero-title">{copy.pageTitle}</h2>
-          <p className="hero-text">{copy.pageText}</p>
+          <span className="eyebrow-chip">候选人</span>
+          <h2 className="hero-title">候选人管理</h2>
+          <p className="hero-text">候选人列表、简历录入、候选人详情</p>
         </div>
 
         <div className="hero-panel">
-          <div className="hero-panel-label">{copy.guideTitle}</div>
+          <div className="hero-panel-label">候选人概览</div>
           <div className="step-list">
             <div className="step-item">
-              <strong>{copy.pasteWay}</strong>
-              <span>{copy.pasteWayDesc}</span>
+              <strong>候选人数</strong>
+              <span>{candidates.length}</span>
             </div>
             <div className="step-item">
-              <strong>{copy.uploadWay}</strong>
-              <span>{copy.uploadWayDesc}</span>
+              <strong>已解析</strong>
+              <span>{parsedCount}</span>
             </div>
             <div className="step-item">
-              <strong>{copy.oldDataTitle}</strong>
-              <span>{copy.oldDataDesc}</span>
+              <strong>数据异常</strong>
+              <span>{brokenCount}</span>
             </div>
           </div>
         </div>
@@ -210,148 +214,236 @@ export default function CandidatesClientPage({ initialCandidates, initialError }
         </section>
       )}
 
-      <section className="grid two align-start">
+      <section className="summary-grid compact-summary">
+        <article className="summary-card">
+          <span>候选人数</span>
+          <strong>{candidates.length}</strong>
+        </article>
+        <article className="summary-card">
+          <span>文件简历</span>
+          <strong>{fileResumeCount}</strong>
+        </article>
+        <article className="summary-card">
+          <span>文本录入</span>
+          <strong>{textResumeCount}</strong>
+        </article>
+        <article className="summary-card">
+          <span>当前筛选</span>
+          <strong>{filteredCandidates.length}</strong>
+        </article>
+      </section>
+
+      <section className="grid two align-start ats-main-grid">
         <article className="card">
           <div className="section-heading">
             <div>
-              <h3 className="card-title">{copy.pasteCard}</h3>
-              <p className="card-subtitle">{copy.pasteCardDesc}</p>
+              <h3 className="card-title">文本录入</h3>
+              <p className="card-subtitle">简历内容</p>
             </div>
-            <span className="badge">{copy.firstWay}</span>
           </div>
-
-          <form className="form-grid" onSubmit={handleCreate}>
+          <form className="form-grid dense-form" onSubmit={handleCreate}>
             <div>
-              <label className="label">{copy.resumeContent}</label>
-              <textarea
-                className="textarea xl"
-                value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                placeholder={copy.resumePlaceholder}
-              />
+              <label className="label">简历内容</label>
+              <textarea className="textarea xl" value={resumeText} onChange={(e) => setResumeText(e.target.value)} />
             </div>
             <div className="actions">
-              <button className="button" disabled={submitting} type="submit">
-                {submitting ? copy.creating : copy.create}
+              <button className="button" disabled={creating} type="submit">
+                {creating ? '保存中...' : '保存候选人'}
               </button>
             </div>
           </form>
         </article>
 
-        <article className="card soft-panel">
-          <div className="section-heading">
+        <article className="card detail-card sticky-panel">
+          <div className="section-heading compact-heading">
             <div>
-              <h3 className="card-title">{copy.uploadCard}</h3>
-              <p className="card-subtitle">{copy.uploadCardDesc}</p>
+              <h3 className="card-title">文件上传</h3>
             </div>
-            <span className="badge">{copy.secondWay}</span>
+            <span className="badge">PDF / DOC / DOCX / TXT</span>
           </div>
-
-          <form className="form-grid" onSubmit={handleUpload}>
+          <form className="form-grid dense-form" onSubmit={handleUpload}>
             <div>
-              <label className="label">{copy.chooseFile}</label>
+              <label className="label">选择文件</label>
               <input
-                id="resume-file-input"
                 className="input"
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
                 type="file"
                 accept=".pdf,.doc,.docx,.txt"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
-              <div className="hint">{copy.uploadHint}</div>
             </div>
+            <div className="small">当前文件：{uploadFile?.name ?? '未选择'}</div>
             <div className="actions">
               <button className="button secondary" disabled={uploading} type="submit">
-                {uploading ? copy.uploading : copy.upload}
+                {uploading ? '上传中...' : '上传并保存'}
               </button>
             </div>
           </form>
         </article>
       </section>
 
-      <section className="card">
-        <div className="section-heading">
-          <div>
-            <h3 className="card-title">{copy.listTitle}</h3>
-            <p className="card-subtitle">{copy.listDesc}</p>
+      <section className="grid two align-start ats-main-grid">
+        <article className="card">
+          <div className="section-heading">
+            <div>
+              <h3 className="card-title">候选人列表</h3>
+              <p className="card-subtitle">搜索、来源、排序</p>
+            </div>
+            <button className="button subtle" onClick={() => void loadCandidates()} type="button" disabled={loading}>
+              {loading ? '刷新中...' : '刷新列表'}
+            </button>
           </div>
-          <button className="button subtle" onClick={() => void loadCandidates()} type="button" disabled={loading}>
-            {loading ? copy.refreshing : copy.refresh}
-          </button>
-        </div>
 
-        <div className="accordion-list">
+          <div className="toolbar-grid">
+            <input
+              className="input"
+              placeholder="搜索姓名 / 技能 / 岗位"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+            />
+            <select className="select" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as 'all' | 'file' | 'text')}>
+              <option value="all">全部来源</option>
+              <option value="file">文件简历</option>
+              <option value="text">文本录入</option>
+            </select>
+            <select className="select" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'latest' | 'experience')}>
+              <option value="latest">按创建时间</option>
+              <option value="experience">按经验年限</option>
+            </select>
+          </div>
+
           {loadError && (
-            <div className="empty error-box">
-              {copy.loadFailedPrefix}{loadError}
-              <div className="small">{copy.backendHint}</div>
+            <div className="empty error-box top-gap">
+              候选人列表加载失败：{loadError}
             </div>
           )}
 
-          {candidates.map((candidate) => {
-            const displayName = safeText(candidate.name, copy.brokenCandidate)
-            const displayTitle = safeText(candidate.structured_profile.current_title, copy.pendingRole)
-            const safeSkills = safeList(candidate.structured_profile.skills)
-            const safeStrengths = safeList(candidate.structured_profile.strengths)
-            const safeRisks = safeList(candidate.structured_profile.risk_flags)
-            const hasBrokenData = looksBrokenText(candidate.name) || looksBrokenText(candidate.raw_resume_text)
+          <div className="data-table top-gap">
+            <div className="table-head four-col">
+              <span>候选人</span>
+              <span>当前岗位</span>
+              <span>状态</span>
+              <span>经验</span>
+            </div>
+            <div className="table-body">
+              {filteredCandidates.map((candidate) => {
+                const status = getCandidateStatus(candidate)
+                const active = selectedCandidateId === candidate.id
 
-            return (
-              <details className="accordion-item" key={candidate.id}>
-                <summary className="accordion-summary">
-                  <div>
-                    <strong>#{candidate.id} {displayName}</strong>
-                    <div className="small">{displayTitle}</div>
-                  </div>
-                  <div className="accordion-meta">
-                    <span className="badge">{candidate.structured_profile.years_experience} {copy.yearsExp}</span>
-                    <span className="accordion-arrow">{copy.expand}</span>
-                  </div>
-                </summary>
-
-                <div className="accordion-body">
-                  {hasBrokenData && <div className="inline-warning">{copy.brokenWarn}</div>}
-                  <div className="score-pills">
-                    <span className="score-pill">{copy.education}{safeText(candidate.structured_profile.education, copy.fallback)}</span>
-                    <span className="score-pill">{copy.location}{safeText(candidate.structured_profile.location, copy.fallback)}</span>
-                    {candidate.source_filename && <span className="score-pill">{copy.sourceFile}{candidate.source_filename}</span>}
-                  </div>
-                  <div className="tag-row">
-                    {(safeSkills.length > 0 ? safeSkills : [copy.fallback]).map((skill) => <span className="tag" key={skill}>{skill}</span>)}
-                  </div>
-                  <div className="small top-gap">{copy.highlights}{safeStrengths.length > 0 ? safeStrengths.join('\u3001') : copy.none}</div>
-                  {safeRisks.length > 0 && <div className="small">{copy.risks}{safeRisks.join('\u3001')}</div>}
-                  {candidate.structured_profile.projects.length > 0 && (
-                    <div className="top-gap">
-                      <div className="small"><strong>{copy.projects}</strong></div>
-                      <ul className="bullet-list compact-list">
-                        {candidate.structured_profile.projects.slice(0, 3).map((project) => {
-                          const highlights = safeList(project.highlights)
-
-                          return (
-                            <li key={`${candidate.id}-${project.name}`}>
-                              <strong>{safeText(project.name, copy.projectNameBroken)}</strong>
-                              {project.role ? ` \u00b7 ${safeText(project.role, copy.roleFallback)}` : ''}
-                              {highlights.length > 0 ? `\uff1a${highlights.join('\uff1b')}` : ''}
-                            </li>
-                          )
-                        })}
-                      </ul>
+                return (
+                  <button
+                    className={`table-row four-col ${active ? 'active' : ''}`}
+                    key={candidate.id}
+                    onClick={() => setSelectedCandidateId(candidate.id)}
+                    type="button"
+                  >
+                    <div>
+                      <strong>#{candidate.id} {safeText(candidate.name, '候选人数据异常')}</strong>
+                      <div className="small">{safeList(candidate.structured_profile.skills).slice(0, 3).join('、') || '待补充'}</div>
                     </div>
-                  )}
-                  <div className="actions compact">
-                    <button className="button danger" onClick={() => void handleDelete(candidate.id, displayName)} type="button" disabled={deletingId === candidate.id}>
-                      {deletingId === candidate.id ? copy.deleting : copy.delete}
-                    </button>
-                  </div>
-                </div>
-              </details>
-            )
-          })}
+                    <span>{safeText(candidate.structured_profile.current_title, '待补充')}</span>
+                    <span className={`status-chip inline ${status === '数据异常' ? 'danger' : status === '已解析' ? 'success' : 'warning'}`}>{status}</span>
+                    <span>{candidate.structured_profile.years_experience} 年</span>
+                  </button>
+                )
+              })}
+              {!loading && !loadError && filteredCandidates.length === 0 && <div className="empty">暂无候选人</div>}
+              {loading && <div className="empty">正在加载...</div>}
+            </div>
+          </div>
+        </article>
 
-          {!loading && !loadError && candidates.length === 0 && <div className="empty">{copy.empty}</div>}
-          {loading && <div className="empty">{copy.loading}</div>}
-        </div>
+        <article className="card detail-card">
+          <div className="section-heading compact-heading">
+            <div>
+              <h3 className="card-title">候选人详情</h3>
+            </div>
+            {selectedCandidate && <span className={`status-chip ${getCandidateStatus(selectedCandidate) === '数据异常' ? 'danger' : getCandidateStatus(selectedCandidate) === '已解析' ? 'success' : 'warning'}`}>{getCandidateStatus(selectedCandidate)}</span>}
+          </div>
+
+          {!selectedCandidate && <div className="empty">请选择候选人</div>}
+          {selectedCandidate && (
+            <>
+              <div className="detail-title-row">
+                <div>
+                  <strong className="detail-title">#{selectedCandidate.id} {safeText(selectedCandidate.name, '候选人数据异常')}</strong>
+                  <div className="small">{safeText(selectedCandidate.structured_profile.current_title, '待补充')}</div>
+                </div>
+              </div>
+
+              <div className="meta-grid">
+                <div className="meta-item"><span>经验年限</span><strong>{selectedCandidate.structured_profile.years_experience} 年</strong></div>
+                <div className="meta-item"><span>创建时间</span><strong>{formatDate(selectedCandidate.created_at)}</strong></div>
+                <div className="meta-item"><span>学历</span><strong>{safeText(selectedCandidate.structured_profile.education, '待补充')}</strong></div>
+                <div className="meta-item"><span>地点</span><strong>{safeText(selectedCandidate.structured_profile.location, '待补充')}</strong></div>
+              </div>
+
+              {getCandidateStatus(selectedCandidate) === '数据异常' && <div className="inline-warning">该候选人数据异常</div>}
+
+              <div className="detail-section">
+                <div className="detail-label">技能</div>
+                <div className="tag-row">
+                  {(safeList(selectedCandidate.structured_profile.skills).length > 0 ? safeList(selectedCandidate.structured_profile.skills) : ['待补充']).map((skill) => (
+                    <span className="tag" key={skill}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">亮点</div>
+                <div className="small detail-text">{safeList(selectedCandidate.structured_profile.strengths).join('、') || '暂无'}</div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">关注项</div>
+                <div className="small detail-text">{safeList(selectedCandidate.structured_profile.risk_flags).join('、') || '暂无'}</div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">来源文件</div>
+                <div className="small detail-text">{selectedCandidate.source_filename || '文本录入'}</div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">项目经历</div>
+                {selectedCandidate.structured_profile.projects.length === 0 && <div className="small detail-text">暂无</div>}
+                {selectedCandidate.structured_profile.projects.length > 0 && (
+                  <div className="stack-list">
+                    {selectedCandidate.structured_profile.projects.slice(0, 4).map((project) => {
+                      const highlights = safeList(project.highlights)
+
+                      return (
+                        <div className="stack-item" key={`${selectedCandidate.id}-${project.name}`}>
+                          <strong>{safeText(project.name, '项目异常')}</strong>
+                          <div className="small">{project.role ? safeText(project.role, '待补充') : '待补充'}</div>
+                          <div className="small detail-text">{highlights.join('；') || '暂无'}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="actions compact">
+                <button className="button danger" onClick={() => setPendingDelete(selectedCandidate)} type="button" disabled={deletingId === selectedCandidate.id}>
+                  {deletingId === selectedCandidate.id ? '删除中...' : '删除候选人'}
+                </button>
+              </div>
+            </>
+          )}
+        </article>
       </section>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="删除候选人"
+        content={pendingDelete ? `候选人：${safeText(pendingDelete.name, '候选人数据异常')}` : ''}
+        confirmLabel="确认删除"
+        danger
+        busy={Boolean(pendingDelete && deletingId === pendingDelete.id)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   )
 }
+
