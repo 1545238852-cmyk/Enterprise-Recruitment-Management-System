@@ -1,45 +1,44 @@
-﻿# AI Recruiting ATS
+﻿# 企业招聘管理系统
 
-Production-style recruiting workflow system built with **FastAPI + Next.js**. The project includes job intake, candidate parsing, knowledge base ingestion, hybrid retrieval, screening reports, and evaluation dashboards.
+基于 **FastAPI + Next.js** 的企业招聘管理系统，支持岗位录入、候选人简历解析、知识库导入、混合召回、筛选报告和评估看板。
 
-## Repository Structure
+## 仓库结构
 
 ```text
 .
-├─ ai/                  # application source
-│  ├─ backend/          # FastAPI service
-│  ├─ frontend/         # Next.js frontend
-│  ├─ docs/             # architecture and deployment docs
-│  ├─ infra/            # infrastructure assets
+├─ ai/                  # 项目源码
+│  ├─ backend/          # FastAPI 后端服务
+│  ├─ frontend/         # Next.js 前端应用
+│  ├─ docs/             # 架构与部署文档
+│  ├─ infra/            # 基础设施相关文件
 │  ├─ docker-compose.yml
-│  └─ README.md         # project setup and feature docs
+│  └─ README.md         # 项目运行与功能说明
 └─ .gitignore
 ```
 
-## Why this repository looks production-ready
+## 项目特点
 
-- clear monorepo layout
-- backend / frontend separation
-- environment template checked in, secrets excluded
-- local runtime artifacts removed from version control
-- Docker-based deployment path included
-- backend tests included
-- frontend build configuration included
+- 前后端分层清晰
+- 支持岗位管理与候选人管理
+- 支持知识库导入与检索增强
+- 支持混合召回与筛选报告
+- 支持本地运行与 Docker 部署
+- 提供后端测试与前端构建能力
 
-## Quick Start
+## 快速开始
 
 ```powershell
 cd "ai"
 copy .env.example .env
 ```
 
-### Backend
+### 启动后端
 
 ```powershell
 .venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload --port 8001
 ```
 
-### Frontend
+### 启动前端
 
 ```powershell
 cd frontend
@@ -47,29 +46,23 @@ npm install
 npm run dev
 ```
 
-Open:
-- Frontend: `http://127.0.0.1:3000`
-- API docs: `http://127.0.0.1:8001/docs`
+访问地址：
+- 前端：`http://127.0.0.1:3000`
+- 接口文档：`http://127.0.0.1:8001/docs`
 
-## Documentation
+## 文档
 
-- App guide: `ai/README.md`
-- Architecture: `ai/docs/architecture.md`
-- Deployment: `ai/docs/deployment.md`
+- 项目说明：`ai/README.md`
+- 架构文档：`ai/docs/architecture.md`
+- 部署文档：`ai/docs/deployment.md`
 
-## GitHub Upload
+## 技术栈
 
-```powershell
-git add .
-git commit -m "chore: prepare repository for github"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
-```
-
-If `origin` already exists:
-
-```powershell
-git remote set-url origin <your-repo-url>
-git push -u origin main
-```
+- FastAPI
+- SQLAlchemy
+- Next.js
+- React
+- TypeScript
+- Docker
+- RAG
+- LLM API
